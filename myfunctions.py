@@ -21,19 +21,21 @@ def dipdir_cond(dipdir, slope_aspect):
         return False
 
 # Friction Condition Check
-def friction_cond(dd_cond, app_dip, friction_angle):
+def friction_cond(dd_cond, app_dip, friction_angle, phir):
     # dd_cond = row['DipDirCond']
     # app_dip = row['AppDip']
-    if dd_cond and app_dip >= friction_angle:
+    if friction_angle is not None:
+        check_friction = friction_angle
+    else:
+        check_friction = phir
+
+    if dd_cond and app_dip >= check_friction:
         return True
     else:
         return False
 
 # Categorisation of Class 1, 2, 3, 4
 def slope_class(app_dip, fric_cond, ira, bfa):
-    # app_dip = row['AppDip']
-    # fric_cond = row['FrictionCond']
-    # Class 1: Apparent Dip <= 0
     if app_dip <= 0:
         return 0
     elif not fric_cond and app_dip > 0:
@@ -48,8 +50,7 @@ def slope_class(app_dip, fric_cond, ira, bfa):
 def factor_safety(slope_class, fric_cond, app_dip, sh, bw, bfa, ira, dens, input_type, c, phi, jrc, jcs, phir):
     app_dip = radians(app_dip)
     bfa = radians(bfa)
-    phi = radians(phi)
-    # phir = radians(phir)
+
     if slope_class in [2,3]:
         # z = sh*(1 - sqrt(((tan(bfa))**(-1))*tan(app_dip)))
         # a1 = (sh - z)*(sin(app_dip))**(-1)
@@ -59,6 +60,7 @@ def factor_safety(slope_class, fric_cond, app_dip, sh, bw, bfa, ira, dens, input
         # w2 is the weight of upper area of failure mass: w2 = Upper Area x density
         w2 = (0.5*dens*sh**2)*(((tan(app_dip))**(-1))-(tan(bfa))**(-1))
         if input_type == "Mohr Coulomb":
+            phi = radians(phi)
             m2t = c*a2/9.81 + (w2*cos(app_dip))*tan(phi)
         else:
             m2t = (w2*cos(app_dip))*tan(radians(phir + jrc * log10(jcs * 1000/(w2*cos(app_dip)))))

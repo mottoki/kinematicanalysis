@@ -191,11 +191,13 @@ def fos_runout(dtv, inp):
         inp.slopeaspect)
     dtv['DipDirCond'] = np.vectorize(dipdir_cond)(dtv[inp.dipdircolumn], inp.slopeaspect)
     dtv['FrictionCond'] = np.vectorize(friction_cond)(dtv["DipDirCond"], dtv["AppDip"],
-        inp.friction)
+        inp.friction, inp.phir)
     dtv['SlopeClass'] = np.vectorize(slope_class)(dtv['AppDip'], dtv['FrictionCond'],
         inp.ira, inp.bfa)
+
     dtv['FOS'] = np.vectorize(factor_safety)(dtv['SlopeClass'], dtv['FrictionCond'], dtv['AppDip'],
-        inp.sh, inp.bw, inp.bfa, inp.ira, inp.density, inp.mattype, inp.cohesion, inp.friction, inp.jrc, inp.jcs, inp.phir)
+        inp.sh, inp.bw, inp.bfa, inp.ira, inp.density, inp.mattype, inp.cohesion, inp.friction,
+        inp.jrc, inp.jcs, inp.phir)
     dtv['RunOut'] = np.vectorize(runout)(dtv['SlopeClass'], dtv['FrictionCond'], dtv['AppDip'],
         inp.sh, inp.bw, inp.bfa, inp.ira, inp.reposeangle, inp.swellingfactor)
     return dtv
@@ -227,13 +229,6 @@ if dtv is not None:
             cohesion, friction, jrc, jcs, phir, repose_ang, swell_f)
         df = fos_runout(df, inp)
 
-        # dtv['AppDip'] = np.vectorize(apparent_dip)(dtv[cdip], dtv[cdipdir], slope_aspect)
-        # dtv['DipDirCond'] = np.vectorize(dipdir_cond)(dtv[cdipdir], slope_aspect)
-        # dtv['FrictionCond'] = np.vectorize(friction_cond)(dtv["DipDirCond"], dtv["AppDip"], friction)
-        # dtv['SlopeClass'] = np.vectorize(slope_class)(dtv['AppDip'], dtv['FrictionCond'], ira, bfa)
-        # dtv['FOS'] = np.vectorize(factor_safety)(dtv['SlopeClass'], dtv['FrictionCond'], dtv['AppDip'], sh, bw2, bfa, ira, density, mat_type, cohesion, friction, jrc, jcs, phir)
-        # dtv['RunOut'] = np.vectorize(runout)(dtv['SlopeClass'], dtv['FrictionCond'], dtv['AppDip'], sh, bw2, bfa, ira, repose_ang, swell_f)
-
         if bfa == bfa_original:
             dm = df.copy()
             xhist = dm['RunOut'].tolist()
@@ -261,12 +256,7 @@ if dtv is not None:
     for elv in range(elev_min, elev_max, sh):
         dtv_part = dtv_elev[(dtv_elev[celev]<=elv+sh) & (dtv_elev[celev]>=elv-sh)]
         dtv_part = fos_runout(dtv_part, inp2)
-        # dtv_part['AppDip'] = np.vectorize(apparent_dip)(dtv_part[cdip], dtv_part[cdipdir], slope_aspect)
-        # dtv_part['DipDirCond'] = np.vectorize(dipdir_cond)(dtv_part[cdipdir], slope_aspect)
-        # dtv_part['FrictionCond'] = np.vectorize(friction_cond)(dtv_part["DipDirCond"], dtv_part["AppDip"], friction)
-        # dtv_part['SlopeClass'] = np.vectorize(slope_class)(dtv_part['AppDip'], dtv_part['FrictionCond'], ira, bfa_original)
-        # dtv_part['FOS'] = np.vectorize(factor_safety)(dtv_part['SlopeClass'], dtv_part['FrictionCond'], dtv_part['AppDip'],
-        #     sh, bw, bfa_original, ira, density, mat_type, cohesion, friction, jrc, jcs, phir)
+
         num_data_part = dtv_part.shape[0]
         num_fail_part = dtv_part[dtv_part['FOS'] < 1.0].count()[1]
         PoF_part = (num_fail_part/num_data_part) * 100
@@ -406,7 +396,8 @@ if dtv is not None:
         c80run: '{:.1f}',
         c95run: '{:.1f}'}).set_table_styles(styles).hide_index()
 
-    st.write(df2.to_html(), unsafe_allow_html=True)
+    # st.write(df2.to_html(), unsafe_allow_html=True)
+    st.table(df2)
 
     # ------------------- Bar Elevation Graph -----------------------------
     st.markdown("-------------")
@@ -431,3 +422,18 @@ if dtv is not None:
     bar_elv_pof.update_coloraxes(showscale=False)
 
     st.plotly_chart(bar_elv_pof, use_container_width=True, theme="streamlit")
+
+    # Table
+    st.markdown("-------------")
+    st.markdown(f"**ALL DATA: BFA={bfa_original}°, BH={sh}m, BW={bw}m**")
+    dm = dm.drop('xycoord', axis=1)
+    dm2=dm.style.set_properties(**{'text-align': 'center'}).format({
+        cdip: '{:.1f}',
+        cdipdir: '{:.1f}',
+        ceast: '{:.1f}',
+        cnorth: '{:.1f}',
+        celev: '{:.1f}',
+        "AppDip": '{:.1f}',
+        "FOS": '{:.2f}',
+        "RunOut": '{:.2f}'}).set_table_styles(styles).hide_index()
+    st.dataframe(dm2)
