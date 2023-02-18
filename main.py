@@ -9,11 +9,11 @@ from plotly.subplots import make_subplots
 from streamlit_plotly_events import plotly_events
 
 from myfunctions import apparent_dip, dipdir_cond, friction_cond, slope_class
-from myfunctions import factor_safety, runout, get_polar, get_coord
+from myfunctions import factor_safety, runout, get_polar, get_coord, myround
 
 from collections import namedtuple
 # ----------------- CONFIG -------------------------------------------
-st.set_page_config(page_title='Kinematics', page_icon=None, layout="wide")
+st.set_page_config(page_title='POF', page_icon=None, layout="wide")
 
 hide_table_row_index = """
     <style>
@@ -24,8 +24,8 @@ hide_table_row_index = """
 
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_rows', None)
 
 # Keyword columns
 key_dip = ['dip']
@@ -121,11 +121,12 @@ window_filter = st.sidebar.radio("Window Filter", window_filter_selection, key='
 wf_angle = st.sidebar.number_input('Window Filter Angle', key='wf_angle', value=30, min_value=0, max_value=90, step=5)
 st.sidebar.markdown("----------")
 # Elevation Filter
-elevation_filter_selection = ["Off", 'On']
-elevation_filter = st.sidebar.radio("Elevation Filter", elevation_filter_selection, key='elevation_filter', horizontal=True)
-slope_elevation = st.sidebar.number_input('Slope Elevation', key='slope_elevation', value=500, min_value=0, step=10)
-elevation_range = st.sidebar.number_input('Elevation Range', key='elevation_range', value=20, min_value=0, step=5)
-st.sidebar.markdown("----------")
+placeholder = st.sidebar.container()
+# elevation_filter_selection = ["Off", 'On']
+# elevation_filter = st.sidebar.radio("Elevation Filter", elevation_filter_selection, key='elevation_filter', horizontal=True)
+# slope_elevation = st.sidebar.number_input('Slope Elevation', key='slope_elevation', value=500, min_value=0, step=10)
+# elevation_range = st.sidebar.number_input('Elevation Range', key='elevation_range', value=20, min_value=0, step=5)
+# st.sidebar.markdown("----------")
 
 
 # ------------------ MAIN PAGE INPUT and INITIALISATION -------------------------------------
@@ -177,6 +178,20 @@ if dtv is not None:
     xelpof = []
     yelpof = []
     numelpof = []
+    print(dtv.head())
+    # Elevation Filter Container
+    elev_mean = dtv.loc[:, celev].mean()
+    elev_min = dtv[celev].min()
+    elev_max = dtv[celev].max()
+    elev_step = (elev_max - elev_min)/5
+    elevation_filter_selection = ["Off", 'On']
+    elevation_filter = placeholder.radio("Elevation Filter", elevation_filter_selection, key='elevation_filter', horizontal=True)
+    slope_elevation = placeholder.number_input('Slope Elevation', key='slope_elevation',
+        value=int(myround(elev_mean)), min_value=int(myround(elev_min)),
+        max_value=int(myround(elev_max)), step=int(myround(elev_step)))
+    elevation_range = placeholder.number_input('Elevation Range', key='elevation_range',
+        value=int(myround(elev_step)), min_value=1, step=1)
+    placeholder.markdown("----------")
     ## Elevation Filter ##
     if elevation_filter == elevation_filter_selection[1]:
         if None not in (slope_elevation, elevation_range):

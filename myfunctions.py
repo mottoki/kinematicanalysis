@@ -5,6 +5,10 @@ from math import sin, cos, tan, asin, acos, atan, radians, degrees, sqrt, log10
 import plotly.graph_objs as go
 import plotly.express as px
 
+# round off to nearest 5
+def myround(x, base=5):
+    return base * round(x/base)
+
 # Apparent Dip Calculation
 def apparent_dip(dip, dipdir, slope_aspect):
     # dip = row[0]
@@ -113,12 +117,17 @@ def get_polar(dtv, bfa, slope_aspect):
 
     # Graph of dip and dip direction
     fig = go.Figure(data=go.Scatterpolar(
-        r = r, theta = theta, mode = 'markers', name='Data'))
+        r = r, theta = theta, mode = 'markers', name='Structure',
+        marker=dict(size=8, opacity=0.3)))
 
     fig.add_trace(
         go.Scatterpolar(
             r = bfa_lst, theta = sa_lst, mode='markers', name='Slope',
-            marker=dict(size=10)))
+            marker=dict(size=12, color='Orange',
+                line=dict(
+                    color='Black',
+                    width=2)
+                )))
 
     fig.update_layout(
         title = dict(
@@ -130,9 +139,9 @@ def get_polar(dtv, bfa, slope_aspect):
             ),
         # showlegend = False,
         polar = dict(
-            radialaxis_tickfont_size = 8,
+            radialaxis_tickfont_size = 10,
             angularaxis = dict(
-                tickfont_size=8,
+                tickfont_size=10,
                 rotation=90, # start position of angular axis
                 direction="clockwise")),)
     return fig
